@@ -1,0 +1,18 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"sqltools.connections": [
+			{
+				"database": "${workspaceFolder:Tether}/example.db",
+				"driver": "SQLite",
+				"name": "ex",
+				"previewLimit": 50
+			}
+		],
+		"sqltools.useNodeRuntime": true
+	}
+}
