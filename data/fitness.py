@@ -103,9 +103,6 @@ class Workout:
         c.execute(f"SELECT workout_text from workouts where name = \'{name}\'")
         res = json.loads(c.fetchone()[0])
         self = self.load_data(res)
-
-        # [print(vars(m)) for m in self.sections[0].movements]
-        print(res)
         return 
     
     def delete(self, name=None):

@@ -78,6 +78,7 @@ class TableView(QTableWidget):
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.setDragDropMode(QAbstractItemView.InternalMove)
+        self.verticalHeader().hide()
         
         if data:
             self.data = data
@@ -146,11 +147,12 @@ class Separator(QFrame):
         self.setLineWidth(3)
 
 class ListModel(QtCore.QAbstractListModel):
-    def __init__(self, *args, list_items=None, **kwargs):
+    def __init__(self, *args, list_items=None, context=None, **kwargs):
         super(ListModel, self).__init__(*args, **kwargs)
         self.list_items = list_items or []
         self.tick = QtGui.QImage('/home/v/Projects/Tether/UI/icons/icons8-tick-box-64.png')
         self.untick = QtGui.QImage('/home/v/Projects/Tether/UI/icons/icons8-unchecked-checkbox-64.png')
+
 
     def data(self, index, role):
         if role == Qt.DisplayRole:
