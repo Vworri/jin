@@ -49,27 +49,12 @@ class Database:
         df = pd.read_sql_query('SELECT * FROM exercises', self.conn)
         return df
 
-    def getPrograms(self, name:str=None):
-        c = self.conn.cursor()
-        if name != None:
-            c.execute(f"SELECT * FROM programs WHERE name == {name}")
-        else:
-            c.execute(f"SELECT * FROM programs")
-        return c.fetchall()
-
-    def upsert_program(self, name:str, duration:int, entries:[[str]]=None):
-        if len(entries) == duration:
-            c = self.conn.cursor()
-            for w in entries:
-                c.execute(f"REPLACE INTO programs (name, daysNum, workoutPath) VALUES (\'{w[0]}\',\'{w[1]}\',\'{w[2]}\');")
-            self.conn.commit()
-        else:
-            return -1
-
     def make_list(self, res):
         r = []
         [r.append(list(e)) for e in res]
         return r
+
+    
 
 if __name__ == '__main__':
     d = Database()

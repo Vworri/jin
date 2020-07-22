@@ -15,6 +15,38 @@ import sys
 
 
 
+class ProgramDayForm(QDialog):
+    NumGridRows = 3
+    NumButtons = 4
+    def __init__(self, parent):
+        QDialog.__init__(self, parent)
+        self.get_workouts()
+        self.workout_dropdown =AutoComplete(self.workouts)
+        self.formGroupBox = QGroupBox()
+        self.createFormGroupBox()
+        self.setLayout(self.layout)    
+        self.selected = None
+
+
+    def get_workouts(self):
+        w = Workout()
+        self.workouts =[ e[0] for e in  w.get_workout_list()]
+
+    def createFormGroupBox(self):
+        self.layout = QFormLayout()
+        self.layout.addRow(QLabel("Workout Name:"), self.workout_dropdown)
+        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttonBox.accepted.connect(self.accept)
+        buttonBox.rejected.connect(self.reject)
+        self.layout.addWidget(buttonBox)
+
+    def accept(self):
+        if self.workout_dropdown.value() == -1:
+                return
+        else:
+            self.selected = self.workout_dropdown.value()
+            self.close()
+
 class MovementForm(QDialog):
     NumGridRows = 3
     NumButtons = 4
@@ -89,16 +121,21 @@ class SectionWidget(QWidget):
             self.reps =  QSpinBox()
             self.l  = QVBoxLayout()
             self.movement_table = TableView(["Name", "Load", "Reps", "Sets", "Timed?"], self.section.movements, self.contextMenuEventMovement)
+            
             self.add_movement_button = QPushButton("Add Movement",self)
             self.movement_table.setFrameShape(QFrame.NoFrame)
+            self.movement_table.itemChanged.connect(self.update_movements)
             self.l.addWidget(self.reps_l) 
             self.l.addWidget(self.reps) 
             self.l.addWidget(self.movement_table)
-           
             self.l.addWidget(self.add_movement_button)
-            
             self.add_movement_button.clicked.connect(self.add_movement)
             self.setLayout(self.l)
+
+        def update_movements(self, item):
+            key = self.movement_table.get_data_key(item.column()).lower()
+            self.parent.w.sections[self.order].movements[item.row()].__dict__[key] = item.text()
+            self.section.movements[item.row()].__dict__[key] = item.text()
         
         def contextMenuEventMovement(self, event):
             menu = QMenu()
@@ -144,8 +181,6 @@ class WorkoutEditor(QWidget):
             else:
                 self.w = w
             self.setWindowTitle(self.w.name)
-            
-            
             self.name_l = QLabel("Workout Name")
             self.name =  QLineEdit()
             self.name.textChanged.connect(self.name_changed)
@@ -186,9 +221,7 @@ class WorkoutEditor(QWidget):
             self.layout.addWidget(self.sectionWidgets[-1])
 
         def save_workout(self):
-            workout = self.w.dump_data()
-            with open(f"data/workouts/{self.w.name}.json", "w") as f:
-                json.dump(workout, f)
+            self.w.save_to_db()
             self.parent.get_workouts()
             self.setParent(None)
 
@@ -209,13 +242,65 @@ class ProgramEditor(QWidget):
             self.hookupWidgets()
 
         def hookupWidgets(self):
+            self.name_l = QLabel("Program Name")
+            self.duration_l = QLabel("Program Duration")
             self.durationW = QSpinBox()
             self.nameW = QLineEdit()
-            self.program_table = TableView(["Day", "Workout Path"], self.program.sched)
-            
+            self.nameW.setText(self.program.name)
+            self.durationW.setValue(self.program.duration)
+            self.nameW.textChanged.connect(self.name_callback)
+            self.durationW.valueChanged.connect(self.duration_callback)
+            self.program_table = TableView(["Day", "Workout Path"], self.program.sched, self.contextMenuEventWorkoutTable)
+            self.program_table.itemDoubleClicked.connect(self.update_days_workout)
+            self.save_button = QPushButton("Save Program")
+            self.save_button.clicked.connect(self.save_program)
             self.layout.addWidget(self.durationW)
             self.layout.addWidget(self.nameW)
             self.layout.addWidget(self.program_table)
+            self.layout.addWidget(self.save_button)
+
+        def duration_callback(self, val):
+            if val > len(self.program.sched):
+                print("higher")
+                for i in range(self.program.duration, val):
+                    self.program.sched.append(ProgramDay(i, "rest"))
+            else:
+                while val < len(self.program.sched) and self.program.sched[-1].workout_path.lower() == "rest":
+                        self.program.sched.pop(-1)
+
+            self.program.duration = len(self.program.sched)
+            self.program_table.update_data(self.program.sched)
+            print(len(self.program.sched))
+            
+        def name_callback(self,text):
+            self.program.name = text
+        
+        def contextMenuEventWorkoutTable(self, event):
+            menu = QMenu()
+            deleteAction = menu.addAction("Remove Workout")
+            setWorkoutAction = menu.addAction("Set Workout")
+
+            action = menu.exec_( self.mapToGlobal(event.pos()))
+            if action == deleteAction:
+                i =  self.program_table.indexAt(event.pos())
+                self.program.sched[i.row()].workout_path = "REST"
+                self.program_table.update_data(self.program.sched)
+                self.program_table.update()
+        
+        def update_days_workout(self, item):
+            p = ProgramDayForm(self)
+            p.exec()
+            self.program.sched[item.row()].workout_path = p.selected
+            self.program_table.update_data(self.program.sched)
+
+        def save_program(self):
+            for i, d in enumerate(self.program_table.data):
+                d.day = i
+            self.program.sched = self.program_table.data
+            self.program.upsert_program()
+            
+            
+
 
 
 
@@ -223,30 +308,42 @@ class ProgramManager(QWidget):
         def __init__(self, parent = None):
             QWidget.__init__(self, parent)
             self.db = Db()
+            
             self.add_button = QPushButton("Add Program")
             self.program_list = QListWidget()
+            self.program_list.clicked.connect(self.handle_program_select)
             self.get_program_list()
+            self.current_program = None
+            self.current_program_edit = ProgramEditor(self.current_program ,parent=self)
             self.layout = QVBoxLayout()
             self.layout.addWidget(self.program_list)
-            self.layout.addWidget(ProgramEditor(parent=self))
+            self.layout.addWidget(self.current_program_edit)
             self.setLayout(self.layout)
 
 
         def get_program_list(self):
-            self.programs = self.db.make_list(self.db.getPrograms())
+            self.programs = self.db.make_list(FitnessProgram("").getPrograms())
             R = [l[0]for l in self.programs]
+            self.program_list.clear()
             [self.program_list.insertItem(0,item) for item in np.unique(R)]
+
+        def handle_program_select(self):
+            program_name = self.program_list.currentItem().text()
+            self.get_program_list()
+            p = list(filter(lambda x: x[0] == program_name, self.programs))
+            self.load_program(p)
+            
+                
+
+        def load_program(self, program:[]):
+            self.current_program = FitnessProgram(program[0][0])
+            self.current_program.duration = len(program)
+            self.current_program.sched = [ProgramDay(x[1], x[2]) for x in program]
+            p = ProgramEditor(self.current_program ,parent=self)
+            self.layout.replaceWidget(self.current_program_edit, p)
+            self.current_program_edit = p
+            return 
            
-
-
-            
-            
-
-        
-
-        
-
-
 
 
 class WorkoutManager(QWidget):
@@ -306,13 +403,14 @@ class WorkoutManager(QWidget):
             else:
                 return -1
         def get_workouts(self):
-            self.workout_paths = glob.glob(f"{self.data_path}/*.json")
-            [self.workouts_view.insertItem(0, w) for w in self.workout_paths ]
+            w = Workout()
+            self.workout_names = w.get_workout_list()
+            [self.workouts_view.insertItem(0, n[0]) for n in self.workout_names]
             
         def delete(self, index:int):
-            name = self.workout_paths[index]
-            os.remove(f"{name}")
-            del self.workout_paths[index]
+            name = self.workout_names[index][0]
+            w = Workout()
+            w.delete(name)
             self.workouts_view.clear()
             self.get_workouts()
 
@@ -322,10 +420,8 @@ class WorkoutManager(QWidget):
             self.workout_editor_tabs.addTab(workout_widget, w.name)
 
         def edit(self, index):
-            name = self.workout_paths[index]
-            with open(f"{name}") as f:
-                w = json.load(f)
-            work = Workout(w)
+            name = self.workout_names[index][0]
+            work = Workout(name)
             workout_widget = WorkoutEditor(work, parent=self)
             self.workout_editor_tabs.addTab(workout_widget, work.name)
             

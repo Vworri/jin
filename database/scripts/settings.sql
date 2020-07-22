@@ -3,6 +3,14 @@ CREATE TABLE programs(
     daysNum INTEGER,
     workoutPath TEXT
 )
+
+####################################
+
+CREATE TABLE workouts
+(
+    name Text,
+    workout_text TEXT
+)
 ####################################
 
 CREATE UNIQUE INDEX idx_programKey 

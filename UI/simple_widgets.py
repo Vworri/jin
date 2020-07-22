@@ -64,9 +64,10 @@ class AutoComplete(QWidget):
             return -1
 
 class TableView(QTableWidget):
-    def __init__(self,cols, data, *args):
+    def __init__(self,cols, data, context=None, *args):
         QTableWidget.__init__(self, *args)
         self.data =[]
+        self.cols = cols
         self.setColumnCount(len(cols))
         self.setHorizontalHeaderLabels(cols)
         self.setDragEnabled(True)
@@ -81,7 +82,11 @@ class TableView(QTableWidget):
         if data:
             self.data = data
             self.set_table()
+        if context != None:
+            self.contextMenuEvent = context
         
+    def get_data_key(self,i):
+        return self.cols[i]
 
     def dropEvent(self, event: QDropEvent):
         if not event.isAccepted() and event.source() == self:
@@ -123,8 +128,8 @@ class TableView(QTableWidget):
         for row, item_list in enumerate(self.data):
             if self.rowCount() <= row:
                 self.insertRow(row)
-            for col, key in enumerate(item_list.__dict__):
-                newitem = QTableWidgetItem(str(item_list.__dict__[key]))
+            for col, key in enumerate(item_list.__dict__.copy()):
+                newitem = QTableWidgetItem(str(item_list.__dict__.copy()[key]))
                 self.setItem(row, col, newitem)
 
     def update_data(self, data):
