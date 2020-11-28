@@ -3,7 +3,6 @@ from PyQt5.QtWidgets import QMainWindow, QLabel, QGridLayout, QWidget, QTabWidge
 from UI.simple_widgets import *
 from PyQt5.QtCore import QTime, QTimer, QDateTime
 from API.garmin import GarminData
-from API.googleCal import *
 
 
 
@@ -33,23 +32,18 @@ class Schedule(QtCore.QAbstractTableModel):
 class Dashboard(QWidget):
     def __init__(self):
         super(Dashboard, self).__init__()
-        self.sched = QtWidgets.QTableView()
-        header = self.sched.horizontalHeader()       
-        # self.sched.verticalHeader().hide() # hide vertical/row headers
-        # self.sched.horizontalHeader().hide()
     
-
-
         gridLayout = QGridLayout() 
-        data = getSchedule()
-        self.model = Schedule(data)
-        self.sched.setModel(self.model)
         gridLayout.setColumnStretch(1, 4)
         gridLayout.setColumnStretch(2, 4)    
         self.setLayout(gridLayout)  
         self.clock = DateTimeWidget()
         gridLayout.addWidget(self.clock, 0, 0)
-        gridLayout.addWidget(self.sched, 0, 1)
+
+class DayView(QWidget):
+    def __init__(self):
+        super(DayView, self).__init__()
+    
 
 if __name__ == "__main__":
     import sys

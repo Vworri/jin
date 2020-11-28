@@ -227,6 +227,7 @@ class WorkoutEditor(QWidget):
         self.init_section()
 
     def init_section(self):
+        self.sectionWidgets = []
         for s in self.w.sections:
             self.sectionWidgets.append(SectionWidget(s, self))
             self.section_layout.addWidget(self.sectionWidgets[-1])
@@ -238,6 +239,7 @@ class WorkoutEditor(QWidget):
     def redraw_sections(self):
         for s in self.sectionWidgets:
             self.section_layout.removeWidget(s)
+        self.init_section()
         for ind, s in enumerate(self.sectionWidgets):
             s.order = ind
             self.w.sections[ind].order = ind
@@ -259,13 +261,6 @@ class WorkoutManager(QWidget):
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)
         parent.statusBar()
-
-        menubar = parent.menuBar()
-        fileMenu = menubar.addMenu('&File')
-        extractAction = QAction("&GET TO THE CHOPPAH!!!", self)
-        fileMenu.addAction(extractAction)
-
-
         self.workouts_view = QListWidget()
         self.workouts_view.clicked.connect(self.workout_selected)
         self.new_workout_button = QPushButton("Create Workout")
@@ -329,10 +324,11 @@ class WorkoutManager(QWidget):
     def get_workouts(self):
         w = Workout()
         self.workout_names = w.get_workout_list()
+        self.workouts_view.clear()
         [self.workouts_view.insertItem(0, n[0]) for n in self.workout_names]
 
     def delete(self, index: int):
-        name = self.workout_names[index][0]
+        name = self.workout_names[index -1][0]
         w = Workout()
         w.delete(name)
         self.workouts_view.clear()
@@ -436,7 +432,7 @@ class ProgramManager(QWidget):
         self.splitter.setSizes([50,200])
 
 
-        self.add_button = QPushButton("Add Program")
+        self.add_button = QPushButton("Create Workout Program")
         self.program_list = QListWidget()
         self.program_list.clicked.connect(self.handle_program_select)
         self.get_program_list()
@@ -492,6 +488,15 @@ class ProgramManager(QWidget):
             return True
 
         return super(QWidget, self).eventFilter(source, event)
+
+class WorkoutPlayer(QWidget):
+    def __init__(self, parent=None):
+        QWidget.__init__(self, parent)
+        self.db = Db()
+    
+    def timer_element(self)
+
+
 
 if __name__ == "__main__":
     import sys

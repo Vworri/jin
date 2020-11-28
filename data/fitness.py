@@ -14,8 +14,8 @@ class Movement:
         self.reps: int
         self.sets: int 
         self.timed: bool
-        if m != None:
-            self.name =  m["name"]
+        if m != None and m != {}:
+            self.name =   m["name"]
             self.load =  m["load"]
             self.reps =  m["reps"]
             #not sure wtf is happening but the __dict__ keeps coming back strangely

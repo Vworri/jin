@@ -17,9 +17,12 @@ CREATE UNIQUE INDEX idx_programKey
 ON programs (name, daysNum);
 
 ####################################
-CREATE TABLE Dailys(
- time_of_day TEXT,
- todo TEXT[]
+CREATE TABLE RoutineTasks(
+Name TEXT,
+TOD TEXT,
+FREQUENCY TEXT,
+FCOUNT INTEGER
+
 )
 
 ####################################

@@ -3,7 +3,9 @@ from PyQt5.QtCore import QSize , QDateTime
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QDropEvent
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QBasicTimer
+
+
 
 
 class DigitalClock(QLCDNumber):
@@ -169,9 +171,46 @@ class ListModel(QtCore.QAbstractListModel):
     def rowCount(self, index):
         return len(self.list_items)
 
+
+class ProgressBarDemo(QWidget):
+    def __init__(self, duration):
+        super().__init__()
+        self.duration = duration * 10
+        self.progressBar = QProgressBar(self)
+        self.progressBar.setGeometry(30, 40, 200, 25)
+
+        self.btnStart = QPushButton('Start', self)
+        self.btnStart.move(30, 80)
+        self.btnStart.clicked.connect(self.startProgress)       
+        self.btnReset = QPushButton('Reset', self)
+        self.btnReset.move(120, 80)
+        self.btnReset.clicked.connect(self.resetBar)        
+        self.timer = QBasicTimer()
+        self.step = 0
+
+    def resetBar(self):
+        self.step = 0
+        self.progressBar.setValue(0)
+
+    def startProgress(self):
+        if self.timer.isActive():
+            self.timer.stop()
+            self.btnStart.setText('Start')
+        else:
+            self.timer.start(self.duration, self)
+            self.btnStart.setText('Stop')
+    
+    def timerEvent(self, event):
+        if self.step >= 100:
+            self.timer.stop()
+            self.btnStart.setText('Start')
+            return
+        self.step += 1 
+        self.progressBar.setValue(self.step)
+
 if __name__ == '__main__':
     import sys
     app = QApplication(sys.argv)
-    clock = DateTimeWidget()
+    clock = ProgressBarDemo(3)
     clock.show()
     sys.exit(app.exec_())
